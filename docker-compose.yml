@@ -1,0 +1,24 @@
+services:
+  gewechat:
+    image: registry.cn-hangzhou.aliyuncs.com/gewe/gewe:latest
+    container_name: gewechat
+    restart: always
+    ports:
+      - "2531:2531"   # API（如不需要从宿主机外访问可删除）
+      - "2532:2532"   # 文件下载服务
+    volumes:
+      - ./gewechat-data:/root/temp
+
+  bot:
+    build: .
+    container_name: wechat-bot
+    restart: always
+    depends_on:
+      - gewechat
+    env_file:
+      - .env
+    ports:
+      - "9919:9919"   # 回调服务（可选暴露，便于排查）
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data

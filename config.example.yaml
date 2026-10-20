@@ -1,0 +1,88 @@
+# ============ 微信多模态 AI 机器人配置 ============
+# 复制为 config.yaml 后修改。敏感 Key 放 .env，此处用 ${VAR} 引用。
+
+# ------ gewechat 服务（docker compose 默认不用改） ------
+gewechat:
+  api_url: "http://gewechat:2531/v2/api"      # gewechat API
+  download_url: "http://gewechat:2532"        # gewechat 文件下载服务
+  callback_url: "http://bot:9919/callback"    # 消息回调地址（容器互通）
+  bot_port: 9919                              # 本机回调服务端口
+  # app_id 不用填：首次登录后自动写入 data/runtime.json
+
+# ------ 大模型（OpenAI 兼容协议，任意多家自由组合） ------
+llm:
+  default_model: "deepseek-chat"        # 纯文本对话使用的模型
+  vision_model: "qwen-vl-max-latest"    # 消息带图片时自动切换的视觉模型
+  temperature: 0.7
+  max_tokens: 2000
+  providers:
+    deepseek:
+      base_url: "https://api.deepseek.com/v1"
+      api_key: "${DEEPSEEK_API_KEY}"
+      models: ["deepseek-chat", "deepseek-reasoner"]
+    dashscope:
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      api_key: "${DASHSCOPE_API_KEY}"
+      models: ["qwen-max", "qwen-plus", "qwen-turbo", "qwen-vl-max-latest", "qwen-vl-plus"]
+    moonshot:
+      base_url: "https://api.moonshot.cn/v1"
+      api_key: "${MOONSHOT_API_KEY}"
+      models: ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-8k-vision-preview"]
+    zhipu:
+      base_url: "https://open.bigmodel.cn/api/paas/v4"
+      api_key: "${ZHIPU_API_KEY}"
+      models: ["glm-4-plus", "glm-4-air", "glm-4-flash", "glm-4v-plus"]
+    openai:
+      base_url: "https://api.openai.com/v1"
+      api_key: "${OPENAI_API_KEY}"
+      models: ["gpt-4o", "gpt-4o-mini"]
+    openrouter:
+      base_url: "https://openrouter.ai/api/v1"
+      api_key: "${OPENROUTER_API_KEY}"
+      models: ["anthropic/claude-sonnet-4.5", "google/gemini-2.5-flash"]
+    ollama:                             # 本地模型示例（宿主机 Ollama）
+      base_url: "http://host.docker.internal:11434/v1"
+      api_key: "ollama"
+      models: ["qwen2.5:14b", "llama3.2-vision:11b"]
+
+# ------ 群聊 ------
+groups:
+  allowlist: []                # 允许服务的群 ID 列表（xxx@chatroom）；留空 = 所有群都响应
+  context_turns: 8             # 每群保留的对话轮数
+  image_stack_size: 20         # 每群图片栈容量（记录最近 N 张图）
+  image_pending_seconds: 180   # 用户发图后 N 秒内 @机器人，自动关联他最近的图
+  reply_at: true               # 回复时 @ 提问者
+  system_prompt: |
+    你是一个微信群里的 AI 助手。要求：
+    1. 回答简洁、口语化，适合微信聊天场景，一般不超过 300 字；
+    2. 直接回答问题，不要重复用户的问题，不要使用 Markdown 标题和表格；
+    3. 用户发来的图片描述请求请详细一些；
+    4. 不确定的事情直说不知道，不要编造。
+  # 按群覆盖（可选），群 ID 为 key：
+  # per_group:
+  #   "12345678@chatroom":
+  #     system_prompt: "你是本群的技术问答助手……"
+  #     default_model: "gpt-4o"
+  #     vision_model: "glm-4v-plus"
+  per_group: {}
+
+# ------ 私聊 ------
+private_chat:
+  enabled: true                # 好友私聊直接对话（无需@）
+  allowlist: []                # 留空 = 所有好友可用
+
+# ------ 安全 / 风控 ------
+security:
+  admins: []                   # 管理员 wxid；留空 = 所有人可用 #命令
+  user_cooldown_seconds: 5     # 同一用户两次提问的最小间隔（防刷屏降封号风险）
+  max_reply_length: 2000       # 回复最大字符数
+  ignore_older_seconds: 120    # 忽略 N 秒前的历史消息（防重复处理）
+
+# ------ 媒体 / 数据 ------
+media:
+  data_dir: "data"             # 图片、文件、数据库的存放目录
+
+# ------ 监控 / 告警 ------
+monitor:
+  log_all_messages: true       # 全量群消息落库（实时监控）
+  offline_webhook: ""          # 掉线告警 webhook（POST JSON {"text": ...}），留空只记日志

@@ -1,0 +1,14 @@
+# 敏感配置，不入库
+config.yaml
+.env
+data/
+gewechat-data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 登录二维码
+qrcode*.png
